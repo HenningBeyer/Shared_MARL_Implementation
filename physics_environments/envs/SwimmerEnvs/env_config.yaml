@@ -1,0 +1,63 @@
+env:
+  env_constants:
+    t_simulation_episode        : 1.00              # in s;   # the length of the simulation episode; can be made bigger to simulate more long-term tasks, while keeping the agent update interval small enough for training.
+                                                    # Note:   # the episode length per agent is defined as t_simulation_episode // batch_size, or similar. Agent learning happens within that simulation interval of t_simulation_episode or may be rarely equal to t_simulation_episode.
+    act_dt                      : 0.01000           # in s;   # act_dt sets the interval the agent can act in the simulation; act_dt should divide act_dt to not run into issues.
+    sim_dt                      : 0.00100           # in s;   # sim_dt should be small enough for realistic simulations; sim_dt should divide t_simulation_episode to not run into issues.
+
+    particle_radius             : 1e-6              # in m;
+    env_size                    : [250e-6, 250e-6]  # in m, might be square always.
+
+
+    n_swimmers                  : 5
+    n_targets                   : 5                      # number of targets for the swimmers to occupy
+    n_flow_grid_cells           : 100
+    reward_func                 : PureTeamRewardFn       # Literal["PurelyIndependentReward", "IndividualRewardFn", "PureTeamRewardFn", "MixedTeamAndIndividualRewardFn"] # wheter all agents get their individual reward, or the global team reward
+    environment_metric          : TimeToOccupy           # The fullfillment of the reward might not be taken as a metric anymore in practice, as it does not indicate how well the actual task is solved, but only how the single agent / or all agent fullfill the reward task.
+                                                         # However, the reward does not show how well the actual goal was fullfilled.
+                                                         # the reward function and environment metric may have to be viewed as separate metrics in MARL as of the increased complexity of the MAS, and the agents being able to exploit many niches in the reward function.
+                                                         # Also: A metric might be analyzed both as a team metric, and individual metrics per deployed agent in many cases. This all will need a lot of automation and simplification in the framework to be managable in feasible time.
+                                                         # It is now very important to *exactly* know what the goal of the environment is and to give it an exact metric that can be used in practice.
+
+    observation_func            : FullGlobalObservation  # Literal["FullGlobalObservation", "EgocentricGlobalObservation", "LocalPerceptionObservation", "IndependentLearningLocalObservation", "PrivateAgentOnlyInformation"]
+    particle_thermostat_type    : Langevin               # Literal["Langevin"]         # --> could extend with ["Brownian", "NoseHoover", ...], if needed
+    particle_interaction_func   : WCAInteraction         # Literal["NoInteraction", "WCAInteraction"]                      # --> could extend with other types such as ["LJ", ...], if needed
+    swimmer_type                : DiscreteSphereSwimmer  # Literal["DiscreteSphereSwimmer2D", "DiscreteJanusSwimmer2D", "ContinuousSphereSwimmer2D", "ContinuousJanusSwimmer2D"]
+    flow_field_func             : NoField2D              # Literal["NoField2D", "SpiralField2D"] # --> could extend this with other custom flow fields, and flowfields controlled by actions
+    episode_generator_func      : UniformGenerator       # Literal["UniformGenerator"] # --> could extend this with ["CustomSceneGenerator", "UniformCustomSceneGenerator", "RandomEpisodeGenerator"] how the first episode state is initialized each episode;
+                                                                                       # features a deterministic, semi-deterministic/random, and a fully random generator
+
+  baseline_name                 : "CPPO" # Literal["CPPO", "IPPO", "MAPPO", "MAPPO-Ind"]
+
+benchmarking:
+  eval_episodes:
+  checkpoiting: ~ mava
+  # physics_consts:
+  #   k_b                       : 1.380649e-23 # boltzman constant
+  #   T                         : 300.00   # in K
+  #   dyn_viscosity             : 0.800e-3 # in mPa*s; dynamic fluid viscosity η; varies strongly per fluid, temperature, and pressure; assumes them constant
+
+  # class_definitions:
+  #   particles:
+  #     SphereParticle2D: # Does not rotate for simplicity
+  #       radius                    :  ${env.particle_radius}
+  #       gamma_t                   :  4*${constants.pi}*${env.physics_consts.dyn_viscosity}*${SphereParticle.radius}  # in m²/s; translational friction γ_t; could also be set to a specific value for experiments; 4πηR in 2D, 6πηR in 3D
+  #       xi_t                      :  # translational noise ξ_t
+  #   swimmers:
+  #     DiscreteSphereSwimmer2D: # takes 2 continuous actions in x and y axis
+  #       particle_type               : SphereParticle
+  #       particle_force_act_range    : [-25.00, 25.00]   # in N
+  #       discrete_actions_per_axis   : [5,5]             # number of action per force axis x,y; should be uneven to have 0 as an centered action.
+  #       acting_mode                 : Repeat_N          # Literal["Repeat_N"] how to handle the gaps between act_dt and sim_dt where the agent is not used for calculation
+                                                          # potentially planned later: Forecast_N; n = act_dt // sim_dt
+  #     ContinuousSphereSwimmer2D: # takes 2 continuous actions in x and y axis
+  #       particle_force_act_range    : [-25.00, 25.00]   # in N
+  #   particle_interactions:
+  #     WCA:
+  #       WCA_sigma                 : ${particle_diameter} # particle diameter σ, may affect rendering, collisions with targets or other particles
+  #       WCA_espilon               : ${T}*${constants.k_b}  # ~ T*k_b for simplicity, T assumed to be constant here
+  #   flow_field:
+  #     SpiralField2D:
+  #       rotate_factor : 1.0
+  #       inward_factor : 1.0
+
